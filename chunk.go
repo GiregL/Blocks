@@ -1,12 +1,14 @@
 package main
 
 import (
+	"blocks/generation"
+	"github.com/aquilax/go-perlin"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 const (
-	ChunkSize   = 4
-	ChunkHeight = 1
+	ChunkSize   = 16
+	ChunkHeight = 128
 )
 
 type Chunk struct {
@@ -14,15 +16,27 @@ type Chunk struct {
 	Blocks   []Block
 }
 
-func CreateChunk(position rl.Vector2) Chunk {
+func CreateChunk(perlin *perlin.Perlin, position rl.Vector2) Chunk {
 	var blocks = make([]Block, ChunkSize*ChunkHeight*ChunkSize)
 
 	for i := 0; i < ChunkSize; i++ {
 		for j := 0; j < ChunkSize; j++ {
-			blocks[(i*ChunkSize)+j] = Block{
-				Color:    ColorFromPosition(rl.NewVector3(float32(i), 0, float32(j))),
-				Position: rl.NewVector3(float32(i), 0, float32(j)),
-				Size:     1.0,
+			translateX := position.X * ChunkSize
+			translateZ := position.Y * ChunkSize
+
+			absolutePosX := float32(i) + translateX
+			absolutePosZ := float32(j) + translateZ
+
+			blockHeight := generation.GetHeight(perlin, absolutePosX, absolutePosZ)
+			blockPosition := rl.NewVector3(float32(i), blockHeight, float32(j))
+
+			for k := 0; k < ChunkHeight && float32(k) < blockHeight; k++ {
+				index := i + ChunkSize*(j+ChunkHeight*k)
+				blocks[index] = Block{
+					Color:    ColorFromPosition(blockPosition),
+					Position: blockPosition,
+					Size:     1.0,
+				}
 			}
 		}
 	}
